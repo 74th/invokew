@@ -2,7 +2,8 @@ from typing import TextIO
 import invoke
 
 
-def task(name=None,
+def task(*args,
+         name=None,
          aliases=(),
          positional=None,
          optional=(),
@@ -14,9 +15,27 @@ def task(name=None,
          pre=[],
          post=[],
          autoprint=False,
-         klass=invoke.Task,
-         *args,
-         **kwargs):
+         klass=invoke.Task):
+    if len(args) > 0 and callable(args[0]) and not isinstance(args[0], invoke.Task):
+        if hasattr(args[0], "__annotations__"):
+            del (args[0].__annotations__)
+        return klass(
+            args[0],
+            name=name,
+            aliases=aliases,
+            positional=positional,
+            optional=optional,
+            iterable=iterable,
+            incrementable=incrementable,
+            default=default,
+            auto_shortflags=auto_shortflags,
+            help=help,
+            pre=pre,
+            post=post,
+            autoprint=autoprint,
+        )
+    if len(args) > 0 and isinstance(args[0], invoke.Task):
+        pre += list(args)
     wrap = invoke.task(
         name=name,
         aliases=aliases,
@@ -29,33 +48,33 @@ def task(name=None,
         help=help,
         pre=pre,
         post=post,
-        autoprint=autoprint,
-        *args,
-        **kwargs)
+        autoprint=autoprint)
+
     def inner(obj):
         if hasattr(obj, "__annotations__"):
-            del(obj.__annotations__)
+            del (obj.__annotations__)
         return wrap(obj)
+
     return inner
 
 
 class Context(invoke.Context):
     def run(self,
-            command:str,
-            shell:str="/bin/bash",
-            warn:bool=False,
-            hide:str=None,
-            pty:bool=True,
-            fallback:bool=True,
-            echo:bool=False,
-            env:dict={},
-            replace_env:bool=True,
-            encoding:str=None,
-            out_stream:TextIO=None,
-            err_stream:TextIO=None,
-            in_stream:TextIO=None,
+            command: str,
+            shell: str = "/bin/bash",
+            warn: bool = False,
+            hide: str = None,
+            pty: bool = True,
+            fallback: bool = True,
+            echo: bool = False,
+            env: dict = {},
+            replace_env: bool = True,
+            encoding: str = None,
+            out_stream: TextIO = None,
+            err_stream: TextIO = None,
+            in_stream: TextIO = None,
             wachers=[],
-            echo_stdin:bool=None)->invoke.Result:
+            echo_stdin: bool = None) -> invoke.Result:
         """
         Execute ``command``, returning an instance of `Result`.
 
@@ -247,7 +266,7 @@ class Context(invoke.Context):
             wachers=wachers,
             echo_stdin=echo_stdin)
 
-    def cd(self, path:str):
+    def cd(self, path: str):
         """
         Context manager that keeps directory state when executing commands.
 
@@ -290,7 +309,7 @@ class Context(invoke.Context):
         """
         return super(Context, self).cd(path)
 
-    def prefix(self, command:str):
+    def prefix(self, command: str):
         """
         Prefix all nested `run`/`sudo` commands with given command plus ``&&``.
 
